@@ -68,6 +68,22 @@ export default function MindMapEditor({ mindmap }: { mindmap: MindMapData }) {
     setIsDirty(true)
   }, [])
 
+  const onAddSibling = useCallback((nodeId: string) => {
+    const prev = dbNodesRef.current
+    const node = prev.find((n) => n.id === nodeId)
+    if (!node || node.parentId === null) return
+    const parentId = node.parentId
+    const newId = crypto.randomUUID()
+    const color =
+      parentId === 'root'
+        ? getNextColor(prev)
+        : (getAncestorColor(parentId, prev) ?? getNextColor(prev))
+    const newNode: DBNode = { id: newId, label: 'New Node', parentId, color }
+    setDbNodes([...prev, newNode])
+    setAutoFocusId(newId)
+    setIsDirty(true)
+  }, [])
+
   const onOpenNotes = useCallback((nodeId: string) => {
     setOpenNoteNodeId(nodeId)
   }, [])
@@ -90,6 +106,7 @@ export default function MindMapEditor({ mindmap }: { mindmap: MindMapData }) {
         autoFocus: n.id === autoFocusId,
         notes: n.notes,
         onAddChild,
+        onAddSibling,
         onDelete,
         onLabelChange,
         onOpenNotes,
@@ -98,7 +115,7 @@ export default function MindMapEditor({ mindmap }: { mindmap: MindMapData }) {
     const flowEdges = deriveEdges(dbNodes)
     const { nodes, edges } = getLayoutedElements(flowNodes, flowEdges)
     return { layoutedNodes: nodes, layoutedEdges: edges }
-  }, [dbNodes, autoFocusId, onAddChild, onDelete, onLabelChange, onOpenNotes])
+  }, [dbNodes, autoFocusId, onAddChild, onAddSibling, onDelete, onLabelChange, onOpenNotes])
 
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutedEdges)
@@ -184,11 +201,11 @@ export default function MindMapEditor({ mindmap }: { mindmap: MindMapData }) {
         </ReactFlow>
       </div>
 
-      {/* Mobile FAB save button — hidden on md+ screens */}
+      {/* Mobile FAB — z-9999 ensures it sits above ReactFlow canvas */}
       <button
         onClick={handleSave}
         disabled={!isDirty || saving}
-        className={`md:hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white text-xs font-semibold transition-all ${
+        className={`md:hidden fixed bottom-6 right-6 z-9999 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white text-xs font-semibold transition-all ${
           isDirty
             ? 'bg-indigo-600 active:bg-indigo-500'
             : 'bg-gray-700 opacity-50'

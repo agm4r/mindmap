@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Handle, NodeToolbar, Position, type NodeProps } from '@xyflow/react'
 
 export type MindMapNodeData = {
@@ -10,6 +10,7 @@ export type MindMapNodeData = {
   autoFocus: boolean
   notes?: string
   onAddChild: (id: string) => void
+  onAddSibling: (id: string) => void
   onDelete: (id: string) => void
   onLabelChange: (id: string, label: string) => void
   onOpenNotes: (id: string) => void
@@ -19,30 +20,18 @@ const hasNotes = (notes?: string) => !!(notes && notes !== '<p></p>')
 
 export default function MindMapNode({ id, data, selected }: NodeProps) {
   const d = data as unknown as MindMapNodeData
-
-  // Initialize editing from autoFocus (true only on fresh mount of new node)
   const [editing, setEditing] = useState(() => d.autoFocus)
-  // editValue only used while editing; display uses d.label directly
   const [editValue, setEditValue] = useState(d.label)
   const inputRef = useRef<HTMLInputElement>(null)
-
-  // DOM-only: focus + select all when entering edit mode
-  // setTimeout lets mobile keyboard finish opening before selecting
-  useEffect(() => {
-    if (editing) {
-      setTimeout(() => {
-        const el = inputRef.current
-        if (el) {
-          el.focus()
-          el.setSelectionRange(0, el.value.length)
-        }
-      }, 50)
-    }
-  }, [editing])
 
   function startEditing() {
     setEditValue(d.label)
     setEditing(true)
+    // Select all after input mounts (requestAnimationFrame = after paint)
+    requestAnimationFrame(() => {
+      const el = inputRef.current
+      if (el) el.setSelectionRange(0, el.value.length)
+    })
   }
 
   function commit() {
@@ -67,8 +56,10 @@ export default function MindMapNode({ id, data, selected }: NodeProps) {
         style={{ backgroundColor: bg }}
         className="relative px-4 py-2 rounded-lg text-white text-sm font-medium shadow-md min-w-25 max-w-45"
       >
+        {/* autoFocus triggers mobile keyboard on mount — both for new nodes and Rename */}
         {editing ? (
           <input
+            autoFocus
             ref={inputRef}
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
@@ -83,7 +74,6 @@ export default function MindMapNode({ id, data, selected }: NodeProps) {
           <span className="truncate block select-none">{d.label}</span>
         )}
 
-        {/* Notes indicator dot */}
         {hasNotes(d.notes) && (
           <span
             className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-400 rounded-full border-2 border-gray-950"
@@ -100,6 +90,17 @@ export default function MindMapNode({ id, data, selected }: NodeProps) {
           >
             + Child
           </button>
+          {!d.isRoot && (
+            <>
+              <span className="text-gray-600 text-xs">|</span>
+              <button
+                onClick={() => d.onAddSibling(id)}
+                className="text-xs text-white hover:text-indigo-300 px-1.5 py-0.5 rounded transition-colors"
+              >
+                + Sibling
+              </button>
+            </>
+          )}
           <span className="text-gray-600 text-xs">|</span>
           <button
             onClick={startEditing}
