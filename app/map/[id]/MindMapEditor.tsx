@@ -184,6 +184,22 @@ export default function MindMapEditor({ mindmap }: { mindmap: MindMapData }) {
         </ReactFlow>
       </div>
 
+      {/* Mobile FAB save button — hidden on md+ screens */}
+      <button
+        onClick={handleSave}
+        disabled={!isDirty || saving}
+        className={`md:hidden fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-white text-xs font-semibold transition-all ${
+          isDirty
+            ? 'bg-indigo-600 active:bg-indigo-500'
+            : 'bg-gray-700 opacity-50'
+        }`}
+      >
+        <span className="flex flex-col items-center leading-tight">
+          <span>{saving ? '…' : isDirty ? '●' : '✓'}</span>
+          <span style={{ fontSize: 9 }}>Save</span>
+        </span>
+      </button>
+
       {/* Notes modal */}
       {openNoteNode && (
         <NoteModal

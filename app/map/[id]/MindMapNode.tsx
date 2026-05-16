@@ -26,11 +26,17 @@ export default function MindMapNode({ id, data, selected }: NodeProps) {
   const [editValue, setEditValue] = useState(d.label)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // DOM-only: focus the input when entering edit mode (no setState — allowed)
+  // DOM-only: focus + select all when entering edit mode
+  // setTimeout lets mobile keyboard finish opening before selecting
   useEffect(() => {
     if (editing) {
-      inputRef.current?.focus()
-      inputRef.current?.select()
+      setTimeout(() => {
+        const el = inputRef.current
+        if (el) {
+          el.focus()
+          el.setSelectionRange(0, el.value.length)
+        }
+      }, 50)
     }
   }, [editing])
 
@@ -93,6 +99,13 @@ export default function MindMapNode({ id, data, selected }: NodeProps) {
             className="text-xs text-white hover:text-indigo-300 px-1.5 py-0.5 rounded transition-colors"
           >
             + Child
+          </button>
+          <span className="text-gray-600 text-xs">|</span>
+          <button
+            onClick={startEditing}
+            className="text-xs text-gray-300 hover:text-white px-1.5 py-0.5 rounded transition-colors"
+          >
+            Rename
           </button>
           <span className="text-gray-600 text-xs">|</span>
           <button
